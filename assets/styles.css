@@ -1,0 +1,137 @@
+:root{
+  --bg: #08101f;
+  --panel-bg: #1e2020;
+  --panel-darker: #10151c;
+  --card: #171d26;
+  --muted: #2b3340;
+  --accent: #4cc2ff;
+  --text: #e8eef6;
+  --subtext: #aab3c2;
+  --shadow: 0 8px 24px rgba(0,0,0,0.35);
+  --radius: 16px;
+}
+
+html, body, #root, .app {
+  height: 100%;
+  background: var(--bg);
+  color: var(--text);
+  font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial;
+}
+
+.app {
+  padding: 20px 24px 40px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.header .title {
+  font-size: 24px;
+  font-weight: 700;
+}
+.header .subtitle {
+  color: var(--subtext);
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.filters {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr auto;
+  gap: 12px;
+  align-items: end;
+}
+
+.filter label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--subtext);
+  font-size: 12px;
+}
+
+.apply-btn {
+  background: var(--accent);
+  color: #001019;
+  padding: 10px 16px;
+  border: none;
+  border-radius: 10px;
+  font-weight: 700;
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.card {
+  background: var(--card);
+  border-radius: var(--radius);
+  padding: 16px;
+  box-shadow: var(--shadow);
+  border: 1px solid var(--muted);
+}
+.card-title { color: var(--subtext); font-size: 12px; }
+.card-value { font-size: 20px; font-weight: 800; margin-top: 6px; }
+
+.content {
+  display: grid;
+  grid-template-columns: 1.3fr 1fr;
+  gap: 12px;
+}
+
+.panel {
+  background: var(--panel-bg);
+  border: 1px solid var(--muted);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  padding: 14px;
+  min-height: 280px;
+}
+.panel-title {
+  color: var(--subtext);
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.footer {
+  color: var(--subtext);
+  font-size: 12px;
+  margin-top: 8px;
+}
+
+/* Dash core components dark tweaks */
+.Select-control, .dash-dropdown  {
+  background-color: var(--panel-bg) !important;
+  color: var(--text) !important;
+}
+.Select-menu-outer {
+  background-color: var(--panel-darker) !important;
+  color: var(--text) !important;
+  border: 1px solid var(--muted) !important;
+}
+.Select--multi .Select-value {
+  background: #203142 !important;
+  border: 1px solid #25445a !important;
+  color: var(--text) !important;
+}
+
+/* Prevent resize loops by stabilizing containers */
+.content { min-width: 0; min-height: 0; }
+.panel   { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+
+/* Fix the chart panel’s height; Graph gets a fixed pixel height too */
+.panel.chart-panel { height: 460px; }
+
+/* Let the Graph sit comfortably; no 100% heights that chase parents */
+.panel.chart-panel .dash-graph,
+.panel.chart-panel .js-plotly-plot,
+.panel.chart-panel .plot-container {
+  width: 100% !important;
+  height: auto !important;   /* do NOT force 100% here */
+}
+
+/* If any parent grid/flex sets min-height incorrectly */
+.cards, .content { align-items: stretch; }
