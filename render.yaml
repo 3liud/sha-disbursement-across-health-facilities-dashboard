@@ -1,0 +1,13 @@
+services:
+  - type: web
+    name: sha-disbursements
+    env: python
+    plan: free
+    region: frankfurt # or oregon
+    buildCommand: pip install -r requirements.txt
+    startCommand: gunicorn app:server --bind 0.0.0.0:$PORT --workers 2 --timeout 120
+    envVars:
+      - key: PYTHONUNBUFFERED
+        value: "1"
+      - key: PYTHONDONTWRITEBYTECODE
+        value: "1"
