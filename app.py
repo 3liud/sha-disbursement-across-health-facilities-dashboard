@@ -38,29 +38,23 @@ amount_col = {"name": "amount", "id": "amount", "type": "numeric"}
 
 
 def make_month_key(df: pd.DataFrame) -> pd.DataFrame:
-    """Add year-month string key 'YYYY-MM' if report_year & report_month exist."""
+    """
+    Add chronological month key columns if report_year & report_month exist.
+    - 'ym' (Period[M]) for sorting
+    - 'year_month' display label like 'Apr-2025'
+    """
     if {"report_year", "report_month"}.issubset(df.columns):
-        # Map month names to 2-digit numbers
-        month_map = {
-            "January": "01",
-            "February": "02",
-            "March": "03",
-            "April": "04",
-            "May": "05",
-            "June": "06",
-            "July": "07",
-            "August": "08",
-            "September": "09",
-            "October": "10",
-            "November": "11",
-            "December": "12",
-        }
-        y = pd.to_numeric(df["report_year"], errors="coerce")
-        m = df["report_month"].astype(str).map(month_map)
-        key = y.fillna(0).astype(int).astype(str).str.zfill(4) + "-" + m.fillna("00")
-        df = df.assign(year_month=key)
+        dt = pd.to_datetime(
+            df["report_year"].astype(str) + "-" + df["report_month"].astype(str),
+            format="%Y-%B",
+            errors="coerce",
+        )
+        df = df.assign(
+            ym=dt.dt.to_period("M"),
+            year_month=dt.dt.strftime("%b-%Y"),
+        )
     else:
-        df = df.assign(year_month=pd.NA)
+        df = df.assign(ym=pd.NaT, year_month=pd.NA)
     return df
 
 
@@ -72,7 +66,7 @@ app.layout = html.Div(
             children=[
                 html.Div("SHA Disbursements Dashboard", className="title"),
                 html.Div(
-                    "Filter by facility, county, month, year. Dark, focused, fast.",
+                    "Filter by facility/vendor,  month, year.",
                     className="subtitle",
                 ),
             ],
@@ -187,7 +181,7 @@ app.layout = html.Div(
                         dcc.Graph(
                             id="top-vendors-chart",
                             style={"height": "420px", "width": "100%"},
-                            config={"responsive": False},
+                            config={"responsive": True},
                             animate=False,
                             clear_on_unhover=True,
                         ),
@@ -200,7 +194,7 @@ app.layout = html.Div(
                         dcc.Graph(
                             id="by-month-chart",
                             style={"height": "420px", "width": "100%"},
-                            config={"responsive": False},
+                            config={"responsive": True},
                             animate=False,
                             clear_on_unhover=True,
                         ),
@@ -213,7 +207,7 @@ app.layout = html.Div(
                         dcc.Graph(
                             id="sunburst-chart",
                             style={"height": "420px", "width": "100%"},
-                            config={"responsive": False},
+                            config={"responsive": True},
                             animate=False,
                             clear_on_unhover=True,
                         ),
@@ -309,7 +303,7 @@ def update_views(json_df):
     def empty_fig():
         f = px.bar(pd.DataFrame({"x": [], "y": []}), x="x", y="y")
         f.update_layout(
-            autosize=False,
+            autosize=True,
             height=420,
             margin=dict(l=10, r=10, t=10, b=10),
             paper_bgcolor="var(--panel-bg)",
@@ -322,15 +316,13 @@ def update_views(json_df):
         banner = "No data available at the moment"
         return (
             banner,
-            empty_fig(),
-            empty_fig(),
-            empty_fig(),
-            empty_fig(),
-            "0.00",
-            "0",
-            "0",
-            "0",
-            [],
+            empty_fig(),  # top vendors
+            empty_fig(),  # by month
+            empty_fig(),  # sunburst
+            "0.00",  # total amount
+            "0",  # total facilities
+            "0",  # rows
+            [],  # table
         )
 
     # Totals
@@ -346,7 +338,7 @@ def update_views(json_df):
     else:
         fig_bar = px.bar(tv, x="amount", y="vendor_name", orientation="h")
         fig_bar.update_layout(
-            autosize=False,
+            autosize=True,
             height=420,
             margin=dict(l=10, r=10, t=10, b=10),
             paper_bgcolor="var(--panel-bg)",
@@ -356,24 +348,29 @@ def update_views(json_df):
             yaxis_title="",
         )
 
-    # 2) Disbursement by month (YYYY-MM)
+    # 2) Disbursement by month — labels 'Apr-2025' with chronological ordering
     dfm = make_month_key(df)
-    if "year_month" in dfm.columns and dfm["year_month"].notna().any():
+    if "ym" in dfm.columns and dfm["ym"].notna().any():
         bym = (
-            dfm.groupby("year_month", as_index=False)["amount"]
+            dfm.dropna(subset=["ym"])
+            .groupby("ym", as_index=False)["amount"]
             .sum()
-            .sort_values("year_month")
+            .sort_values("ym")
         )
+        bym["year_month"] = bym["ym"].dt.strftime("%b-%Y")
         fig_month = px.bar(bym, x="year_month", y="amount")
+        fig_month.update_xaxes(
+            categoryorder="array", categoryarray=bym["year_month"].tolist()
+        )
         fig_month.update_layout(
-            autosize=False,
+            autosize=True,
             height=420,
             margin=dict(l=10, r=10, t=10, b=10),
             paper_bgcolor="var(--panel-bg)",
             plot_bgcolor="var(--panel-bg)",
             font_color="var(--text)",
-            xaxis_title="Year-Month",
-            yaxis_title="KES",
+            xaxis_title="Month-Year",
+            yaxis_title="Amount in KES",
         )
     else:
         fig_month = empty_fig()
@@ -402,7 +399,7 @@ def update_views(json_df):
 
     for fig in (fig_sun,):
         fig.update_layout(
-            autosize=False,
+            autosize=True,
             height=420,
             margin=dict(l=10, r=10, t=10, b=10),
             paper_bgcolor="var(--panel-bg)",
@@ -424,4 +421,4 @@ def update_views(json_df):
 
 
 if __name__ == "__main__":
-    app.run(debug=False, use_reloader=False, host="0.0.0.0", port=8050)
+    app.run(debug=False, use_reloader=False, port=8050)
